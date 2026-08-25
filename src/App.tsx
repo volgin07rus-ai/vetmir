@@ -621,7 +621,8 @@ function useLenis() {
   const ref = useRef<{ stop: () => void; start: () => void } | null>(null)
 
   useEffect(() => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    /* Проверки на «уменьшение движения» здесь больше нет: плавная
+       прокрутка работает у всех, как и остальные анимации. */
     let alive = true
     let inst: { raf: (t: number) => void; destroy: () => void; stop: () => void; start: () => void }
     import('lenis').then(({ default: Lenis }) => {

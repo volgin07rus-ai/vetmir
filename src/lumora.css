@@ -137,18 +137,6 @@
   opacity: 1;
 }
 
-/* Убираем сдвиг и масштаб, но оставляем проявление: блоки по-прежнему
-   выступают при прокрутке, только не едут. Длительности и задержки
-   берутся прежние, поэтому очередь строк и слов сохраняется. */
-@media (prefers-reduced-motion: reduce) {
-  .rv-fade,
-  .rv-scale,
-  .ln > span,
-  .wd {
-    transform: none !important;
-    transition-property: opacity !important;
-  }
-}
 
 /* ============================ ЗАГРУЗЧИК ============================ */
 
@@ -1494,13 +1482,6 @@
   transform: rotate(90deg) scale(0.88);
   transition-delay: 0s;
 }
-@media (prefers-reduced-motion: reduce) {
-  #modal .x {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
 #modal .kicker {
   display: inline-flex;
   align-items: center;
@@ -1698,12 +1679,6 @@
   margin-top: 0.125rem;
   font-size: 0.75rem;
   color: rgba(43, 42, 41, 0.7);
-}
-@media (prefers-reduced-motion: reduce) {
-  .sel-list,
-  .sel-arrow {
-    transition: none;
-  }
 }
 #modal .success {
   display: none;
@@ -2037,15 +2012,6 @@
   transform: rotate(90deg);
 }
 
-/* Панель по-прежнему открывается плавно: это ответ на нажатие, а не
-   самопроизвольное движение при прокрутке. Снимается только подъезд
-   пунктов — они просто проявляются. */
-@media (prefers-reduced-motion: reduce) {
-  .why li {
-    transform: none;
-    transition-property: opacity;
-  }
-}
 
 /* ==================== КНОПКИ ПЕРВОГО ЭКРАНА ==================== */
 
