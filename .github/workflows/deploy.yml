@@ -35,7 +35,12 @@ jobs:
         env:
           VITE_BASE: /${{ github.event.repository.name }}/
 
+      # enablement: true включает Pages сам, если в настройках репозитория
+      # они ещё не включены, — иначе первая же выкладка падает с «Pages
+      # is not enabled» и лезть в настройки руками.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
