@@ -84,6 +84,14 @@ const SUB =
 */
 const SUB_MOBILE = ['Приём', 'Стационар', 'Выезд на дом']
 
+/*
+  Ссылка на Яндекс.Карты строится поиском по адресу, а не по координатам:
+  координаты пришлось бы выяснять и держать актуальными вручную, а поиск
+  по улице и дому в Москве отдаёт ровно одну точку.
+*/
+const mapUrl = (address: string) =>
+  'https://yandex.ru/maps/?text=' + encodeURIComponent('Москва, ' + address)
+
 /* Блок «Портфолио» из Lumora занят клиниками: у ветклиники портфолио нет,
    а три адреса ложатся в ту же сетку крупных карточек. */
 const CLINICS = [
@@ -1206,9 +1214,18 @@ function Clinics() {
                 <div className="scrim" aria-hidden="true" />
                 <div className="meta">
                   <span>{c.hours}</span>
-                  <span className="badge">
+                  {/* Стрелка ведёт на Яндекс.Карты с этим адресом. Открывается
+                      в новой вкладке: увести человека с сайта на карту, откуда
+                      он не вернётся, — плохой размен. */}
+                  <a
+                    className="badge"
+                    href={mapUrl(c.address)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Показать на Яндекс.Картах: ${c.address}`}
+                  >
                     <ArrowUpRight className="ic" strokeWidth={2} aria-hidden="true" />
-                  </span>
+                  </a>
                 </div>
                 <div className="bot">
                   <h3>{c.metro}</h3>

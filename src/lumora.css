@@ -743,9 +743,16 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+/*
+  Высота на телефоне поднята с 22rem: текстовый блок внизу занимал 337px
+  из 352px карточки, и от фотографии оставалась полоска в 15px — снимок
+  просто не было видно, а режим работы со стрелкой оказывались под самой
+  плотной частью затемнения. При 26rem под шапку остаётся ~100px чистого
+  кадра, и она читается на фотографии, как задумано.
+*/
 .clinic-card {
   position: relative;
-  min-height: 22rem;
+  min-height: 26rem;
   overflow: hidden;
   border-radius: 2rem;
   background: var(--lm-dark);
@@ -782,8 +789,11 @@
   inset: 0;
   background: linear-gradient(to top, rgba(10, 85, 70, 0.45), rgba(10, 85, 70, 0.12));
 }
+/* z-index обязателен: у .bot он равен 1, и без него затемнение под текстом
+   накрывало режим работы со стрелкой сверху — они тонули в вуали. */
 .clinic-card .meta {
   position: relative;
+  z-index: 2;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -792,12 +802,24 @@
   letter-spacing: 0.025em;
   color: #fff;
 }
-/* Наверху карточки затемнение слабое, поэтому режим работы и стрелка
-   получают собственную плотную подложку. */
+/*
+  Режим работы — белой плашкой с тёмным текстом, а не тёмной с белым.
+  Это главное, что человек ищет в карточке ночью, и на фотографии белое
+  пятно видно первым. Тёмно-зелёный на белом даёт 8.8:1.
+*/
 .clinic-card .meta > span:first-child {
-  background: rgba(10, 85, 70, 0.92);
+  background: #fff;
+  color: var(--lm-dark);
+  font-weight: 600;
   border-radius: 9999px;
   padding: 0.4375rem 0.875rem;
+}
+/* У закрытой клиники наоборот приглушено: белым она кричала бы громче
+   работающих, а сообщать ей нечего. Белый 90% на #0a5546 — 7.1:1. */
+.clinic-card.closed .meta > span:first-child {
+  background: rgba(10, 85, 70, 0.92);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
 }
 .clinic-card .badge {
   width: 2.75rem;
@@ -826,7 +848,9 @@
   z-index: 1;
   inset-inline: 0;
   bottom: 0;
-  padding: 4rem 1.5rem 1.5rem;
+  /* Верхнее поле — это длина растяжки затемнения. На телефоне 4rem съедали
+     ещё 24px кадра сверх текста, при 2.5rem растяжка остаётся мягкой. */
+  padding: 2.5rem 1.5rem 1.5rem;
   background: linear-gradient(
     to top,
     rgba(10, 85, 70, 0.97) 0%,
@@ -1363,13 +1387,22 @@
 
 /* ============================ МОДАЛКА ============================ */
 
+/*
+  Форма по центру на всех экранах. На телефоне она была прижата к низу,
+  как шторка, но форма высокая: сверху оставалась полоса пустоты, а сама
+  анкета уезжала под нижний край. По центру она видна целиком.
+*/
 #modal {
   position: fixed;
   inset: 0;
   z-index: 110;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
+  /* На коротком телефоне форма выше экрана: даём подложке прокрутку, а
+     панели margin:auto. Одного align-items:center мало — при переполнении
+     он срезает верх панели, и до имени уже не добраться. */
+  overflow-y: auto;
   padding: 1rem;
   background: rgba(10, 85, 70, 0.35);
   backdrop-filter: blur(16px);
@@ -1377,17 +1410,13 @@
   pointer-events: none;
   transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
-@media (min-width: 640px) {
-  #modal {
-    align-items: center;
-  }
-}
 #modal.open {
   opacity: 1;
   pointer-events: auto;
 }
 #modal .panel {
   position: relative;
+  margin: auto;
   width: 100%;
   max-width: 32rem;
   overflow: hidden;
@@ -1831,16 +1860,18 @@
     grid-template-columns: 1fr;
     justify-items: center;
     /* Просвет считается от вылета: чем крупнее квадрат, тем выше поднимается
-       вырезка. При квадрате 303px собака встаёт на 63px над плиткой, попугай
-       на 69 — при меньшем зазоре их головы заезжали бы на карточку выше. */
-    gap: 5.5rem;
-    padding-top: 5rem;
+       вырезка. Он уменьшен вместе с плиткой в той же пропорции, иначе
+       головы животных заезжали бы на карточку выше. */
+    gap: 4.5rem;
+    padding-top: 4rem;
   }
   .pet-grid > li {
     width: 100%;
-    /* На телефоне плитка занимает всю доступную ширину, на планшете
-       упирается в 21rem — иначе на 768px квадрат раздулся бы до 670px. */
-    max-width: min(100%, 21rem);
+    /* Плитка ужата с 21 до 17.5rem: пять квадратов по 301px растягивали
+       блок на 2462px, и телефон приходилось листать вечность. Меньше
+       делать нельзя — вырезки рисовались под крупный кадр и на мелком
+       теряют морды. */
+    max-width: min(100%, 17.5rem);
   }
 }
 
