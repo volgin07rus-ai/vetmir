@@ -103,7 +103,10 @@ const CLINICS = [
     desc: 'Главная клиника: приём, операционная, стационар и лаборатория. Дежурная смена работает всю ночь',
     photo: asset('clinic-shipilovskaya.webp'),
     alt: 'Вход в клинику «Ветмир» на улице Генерала Белова',
-    tags: ['Круглосуточно', 'Стационар', 'Хирургия'],
+    /* «24/7» вместо «Круглосуточно»: три метки в 137, 108 и 99px не влезали
+       в 287px строки и вторая уезжала вниз. Смысл не теряется — режим работы
+       написан крупным на шапке карточки. */
+    tags: ['24/7', 'Стационар', 'Хирургия'],
   },
   {
     metro: 'Крылатское',
@@ -489,16 +492,18 @@ function Actions({ stacked = false }: { stacked?: boolean }) {
     </a>
   )
 
+  /* heroact выравнивает обе кнопки по одной ширине и делает вторую
+     заметной: прозрачная со светлой рамкой сливалась с кремовым фоном. */
   if (stacked) {
     return (
-      <div className="animate-fade-up delay-700 flex flex-col items-center gap-2">
+      <div className="heroact animate-fade-up delay-700 flex flex-col items-center gap-2">
         {book}
         {call}
       </div>
     )
   }
   return (
-    <div className="animate-fade-up delay-700 flex flex-wrap items-center justify-center gap-3">
+    <div className="heroact animate-fade-up delay-700 flex flex-wrap items-center justify-center gap-3">
       {book}
       {call}
     </div>
@@ -596,7 +601,7 @@ function MobileHero() {
       />
       <div
         className="animate-scale-in delay-1100 absolute inset-x-0 flex justify-center px-4"
-        style={{ bottom: 'clamp(14px, 2.6vh, 28px)' }}
+        style={{ bottom: 'clamp(24px, 4.4vh, 40px)' }}
       >
         <EmergencyCall compact />
       </div>
