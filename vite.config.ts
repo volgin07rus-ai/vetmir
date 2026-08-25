@@ -12,7 +12,7 @@ import tailwindcss from '@tailwindcss/vite'
   и достаточно передать VITE_BASE=/.
 */
 export default defineConfig({
-  base: process.env.VITE_BASE ?? '/vetmir-site/',
+  base: process.env.VITE_BASE ?? '/vetmir/',
   plugins: [react(), tailwindcss()],
   server: {
     host: '127.0.0.1',
