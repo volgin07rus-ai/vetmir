@@ -1,0 +1,2003 @@
+/* ====================================================================
+   Структура и стили перенесены из проекта Lumora и перекрашены под
+   Ветмир. Классы намеренно оставлены как в оригинале (.pill, .shell,
+   .srow, #site-footer и т.д.), чтобы правку было легко сверять с
+   исходником.
+
+   Замены цветов:
+     #0a0a0a  тёмные панели  → #0a5546  глубокий зелёный
+     #b15f2c  акцент         → #ef7c31 / #b04a12 (текстовый)
+     #f1f0ee  поверхность    → #fdf8f1  кремовый
+     #e6e5e2  линия          → #e8e2d8
+
+   Прозрачности белого на тёмном подняты с .45/.55 до .70: на #0a5546
+   белый 55% даёт 3.83:1 — ниже нормы AA, 70% даёт 5.19:1.
+   ==================================================================== */
+
+:root {
+  --lm-ink: #2b2a29;
+  --lm-muted: #8a8580;
+  --lm-line: #e8e2d8;
+  --lm-surface: #fdf8f1;
+  --lm-surface-2: #f3eadd;
+  --lm-dark: #0a5546;
+  --lm-dark-2: #0e7a63;
+  --lm-accent: #ef7c31;
+  --lm-accent-ink: #b04a12;
+  --lm-accent-from: #f79246;
+  --lm-accent-to: #c95a13;
+  --lm-shell: 88rem;
+  /* Вотермарк в подвале: на телефоне фиксированные 13rem дают 208px и от
+     слова видно две буквы, поэтому кегль привязан к ширине окна. */
+  --lm-watermark: clamp(4rem, 22vw, 13rem);
+}
+
+/*
+  В Lumora корневой кегль привязан к ширине окна (0.83vw / 1.11vw и т.д.),
+  из-за чего между брейкпоинтами вся вёрстка плавно сжимается. Здесь этого
+  нет намеренно: первый экран считался при 16px, и его выверенная геометрия
+  — зазор кнопок до собаки, высота кнопок 56px, поля 48px — поехала бы.
+  Например при 1200px корневой кегль стал бы 13.33px, кнопки — 46.7px.
+  Увеличение на экранах шире 1920px оставлено, оно ничего не ломает и
+  делается в коде (applyAdaptiveGrid).
+*/
+
+.shell {
+  /* width:100% обязателен: в меню .shell — элемент flex-колонки, и одна
+     лишь margin-inline:auto схлопывает его до ширины содержимого, из-за
+     чего сетка шапки меню теряет свои 1fr-колонки. */
+  width: 100%;
+  max-width: var(--lm-shell);
+  margin-inline: auto;
+}
+
+.ic {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  vertical-align: middle;
+  flex: none;
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+}
+.skip:focus {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 130;
+  border-radius: 0.875rem;
+  background: var(--lm-dark);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #fff;
+}
+
+/* ============================ РЕВИЛЫ ============================ */
+
+[data-rv] {
+  transition-delay: var(--d, 0ms);
+}
+.rv-fade {
+  opacity: 0;
+  transform: translateY(var(--y, 12px));
+  transition:
+    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--d, 0ms);
+}
+.rv-fade.is-in {
+  opacity: var(--o, 1);
+  transform: none;
+}
+.rv-scale {
+  opacity: 0;
+  transform: translateY(16px) scale(0.96);
+  transition:
+    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: var(--d, 0ms);
+}
+.rv-scale.is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.ln {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.14em;
+}
+.ln > span {
+  display: block;
+  transform: translateY(112%);
+  opacity: 0;
+  transition:
+    transform 0.9s cubic-bezier(0.215, 0.61, 0.355, 1),
+    opacity 0.9s cubic-bezier(0.215, 0.61, 0.355, 1);
+}
+.is-in .ln > span {
+  transform: none;
+  opacity: 1;
+}
+
+.wd {
+  display: inline-block;
+  transform: translateY(24px);
+  opacity: 0;
+  transition:
+    transform 0.7s cubic-bezier(0.165, 0.84, 0.44, 1),
+    opacity 0.7s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+.is-in .wd {
+  transform: none;
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-fade,
+  .rv-scale {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .ln > span,
+  .wd {
+    transform: none !important;
+    opacity: 1 !important;
+    transition: none !important;
+  }
+}
+
+/* ============================ ЗАГРУЗЧИК ============================ */
+
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  background: var(--lm-dark);
+  color: #fff;
+  border-radius: 0 0 2rem 2rem;
+  transform: translateY(0);
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#loader.out {
+  transform: translateY(-100%);
+}
+#loader .center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  text-align: center;
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#loader.out .center {
+  opacity: 0;
+  transform: translateY(-12px);
+}
+#loader .brandmark {
+  height: 2.75rem;
+  width: auto;
+}
+#loader .tag {
+  max-width: 26ch;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+#loader .prog {
+  width: min(22rem, 72vw);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+#loader .track {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2);
+}
+#loader .fill {
+  height: 100%;
+  background: var(--lm-accent);
+  width: 0%;
+  transition: width 0.1s ease-out;
+}
+#loader .meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.7);
+}
+#loader .num {
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* ============================ ОБЩИЕ КОМПОНЕНТЫ ============================ */
+
+.pill {
+  display: inline-block;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.hoverable .pill:hover {
+  transform: scale(1.04);
+}
+.pill > span {
+  display: inline-flex;
+  align-items: center;
+  /* Одинаковая высота у «таблетки» со стрелкой и без — иначе они
+     расходятся на 3px и в ряду это видно. */
+  min-height: 3rem;
+  justify-content: center;
+  gap: 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.pill.dark > span {
+  background: var(--lm-dark);
+  color: #fff;
+}
+.pill.light > span {
+  background: var(--lm-surface);
+  color: var(--lm-ink);
+}
+/* Класс назван ghost, а не outline: у Tailwind есть утилита .outline
+   (outline-style: solid), и она рисовала вокруг кнопки чёрную рамку. */
+.pill.ghost > span {
+  border: 1px solid var(--lm-line);
+  background: transparent;
+  color: var(--lm-ink);
+}
+.pill.accent > span {
+  background: var(--lm-accent);
+  color: #3a1704;
+}
+.pill.witharrow > span {
+  padding: 0.375rem 0.375rem 0.375rem 1.5rem;
+}
+.pill.noarrow > span {
+  /* Высоту задаёт min-height, иначе вертикальные поля дают 51px против
+     48px у варианта со стрелкой. */
+  padding: 0 1.75rem;
+}
+.pill .badge {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  font-size: 1rem;
+  background: var(--lm-dark);
+  color: #fff;
+}
+.pill.dark .badge {
+  background: #fff;
+  color: var(--lm-dark);
+}
+.pill .badge .ic {
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.hoverable .pill.ar-right:hover .badge .ic {
+  transform: translate(3px, 0);
+}
+.hoverable .pill.ar-up:hover .badge .ic {
+  transform: translate(2px, -2px);
+}
+
+.tag-chip {
+  display: inline-flex;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.alink {
+  display: inline-flex;
+  align-items: center;
+  /* 28px — минимум WCAG 2.5.8 (24px) с запасом. */
+  min-height: 1.75rem;
+}
+.alink > span {
+  display: inline-block;
+  opacity: 0.72;
+  transition:
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.35s ease;
+}
+.hoverable .alink:hover > span {
+  transform: translateX(4px);
+  opacity: 1;
+}
+
+/* ============================ ШАПКА ============================ */
+
+/*
+  fixed, а не absolute: шапка должна оставаться под рукой на всей странице,
+  а не на одном первом экране. Раскладка от этого не поехала — absolute с
+  top:0 точно так же был вынут из потока.
+*/
+#site-header {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 50;
+  /* Список полный, а не только transform: у #site-header специфичность
+     выше, чем у .rv-fade, и короткая запись отменила бы плавное появление
+     шапки при загрузке. Задержка в 150ms — та же, что была у ревила. */
+  transition:
+    transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s,
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+/* Ниже первого экрана под шапкой идут фотографии клиник — тёмные подписи
+   на них не прочесть, поэтому появляется кремовая подложка. */
+#site-header[data-stuck] {
+  background: rgba(253, 248, 241, 0.86);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 1px 0 rgba(43, 42, 41, 0.08);
+}
+/* На движении вниз шапка уезжает: на телефоне она занимает 78px — десятую
+   часть экрана. Возвращается на первом же движении вверх. Специфичность
+   выше, чем у .rv-fade.is-in, иначе появление шапки сбрасывало бы сдвиг. */
+#site-header[data-gone] {
+  transform: translateY(-100%);
+}
+#site-header .bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1rem 1.25rem;
+}
+@media (min-width: 640px) {
+  #site-header .bar {
+    padding: 1.25rem 2rem;
+  }
+}
+.brandbtn {
+  display: flex;
+  align-items: center;
+  height: 2.75rem;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.brandbtn img {
+  height: 2.25rem;
+  width: auto;
+}
+.hoverable .brandbtn:hover {
+  transform: scale(1.04);
+}
+#site-header nav.main {
+  display: none;
+}
+@media (min-width: 1024px) {
+  #site-header nav.main {
+    display: flex;
+  }
+}
+#site-header nav.main ul {
+  display: flex;
+  gap: 2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.navlift {
+  display: inline-flex;
+  align-items: center;
+  height: 2.75rem;
+  gap: 0.25rem;
+  opacity: 0.85;
+  transition:
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 0.35s ease;
+}
+.hoverable .navlift:hover {
+  transform: translateY(-2px);
+  opacity: 1;
+}
+.chip {
+  border: 1px solid rgba(232, 226, 216, 0.9);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(4px);
+  border-radius: 0.875rem;
+}
+#clock {
+  display: none;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: rgba(43, 42, 41, 0.75);
+}
+@media (min-width: 768px) {
+  #clock {
+    display: flex;
+  }
+}
+#clock .lbl {
+  color: rgba(43, 42, 41, 0.75);
+}
+#clock .t {
+  min-width: 3.5rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--lm-ink);
+}
+#clock .sep {
+  color: rgba(43, 42, 41, 0.75);
+}
+#clock .d {
+  font-weight: 500;
+}
+#menu-btn {
+  transition: background 0.25s ease;
+}
+.hoverable #menu-btn:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+#menu-btn .inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.hoverable #menu-btn:hover .inner {
+  transform: scale(1.05);
+}
+#menu-btn .word {
+  display: none;
+}
+@media (min-width: 640px) {
+  #menu-btn .word {
+    display: inline;
+  }
+}
+
+/* ============================ О КЛИНИКЕ ============================ */
+
+#about {
+  background: #fff;
+}
+/*
+  Сверху поля больше, чем снизу, потому что фигура врача выходит за свою
+  рамку вверх — на 74px при широком экране и на 60px при узком. При равных
+  полях сверху оставалось 38px против 112 снизу, и блок висел прижатым к
+  верхнему краю. Здесь поля выставлены так, чтобы воздух над головой и под
+  блоком сошёлся.
+*/
+#about .grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  align-items: center;
+  gap: 3rem;
+  padding: 8rem 1.25rem 5rem;
+}
+@media (min-width: 640px) {
+  #about .grid {
+    padding-inline: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  #about .grid {
+    grid-template-columns: 1fr 1fr;
+    padding-block: 11.5rem 7rem;
+  }
+}
+.globe-block {
+  position: relative;
+  min-height: 14rem;
+}
+@media (min-width: 1024px) {
+  .globe-block {
+    min-height: 20rem;
+  }
+}
+/* Прозрачность элементу, а не цвету — по той же причине, что у .deco:
+   иначе подушечки лапы темнеют там, где заходят друг на друга. */
+.globe-bg {
+  position: absolute;
+  left: -1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12rem;
+  color: #2b2a29;
+  opacity: 0.09;
+}
+@media (min-width: 640px) {
+  .globe-bg {
+    font-size: 16rem;
+  }
+}
+@media (min-width: 1024px) {
+  .globe-bg {
+    left: -1.5rem;
+    font-size: 20rem;
+  }
+}
+/*
+  Врач с собакой — вырезка с прозрачным фоном, стоит прямо на фоне секции.
+  Рамки под ней нет: за спиной работает та же лапа, что была здесь раньше,
+  и она проглядывает в просветах вырезки — между рукой и корпусом, вокруг
+  головы. Квадрат-подложка эти просветы бы залил.
+
+  Рамка задаёт только габарит: доля вырезки 0.796, высота 118% от стороны
+  даёт ширину 0.94 — фигура не вылезает вбок, а вверх выходит на 18%. При
+  максимальных 26rem это 75px, и они укладываются в верхнее поле секции
+  (112px), так что overflow:clip у секции их не срезает.
+*/
+.about-figure {
+  position: relative;
+  width: 100%;
+  max-width: 26rem;
+  aspect-ratio: 1;
+}
+/* Тень нарисована прямо в файле, поэтому своей здесь нет: две наложились
+   бы друг на друга и дали бы двойной контур под ногами. */
+.about-pet {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 118%;
+  width: auto;
+  max-width: none;
+}
+/* Отступ в 8rem держал подпись под водяным знаком в левой колонке. Она
+   переехала в подвал блока, где встаёт в общий ряд, — отступ не нужен. */
+.globe-note {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: rgba(43, 42, 41, 0.75);
+}
+.globe-note .ic {
+  font-size: 1.5rem;
+  color: var(--lm-dark);
+}
+.globe-note span {
+  max-width: 16rem;
+}
+.stmt {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+#about h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+@media (min-width: 640px) {
+  #about h2 {
+    font-size: 1.875rem;
+  }
+}
+#about h2 .mut {
+  color: var(--lm-muted);
+}
+/* Подпись слева, кнопка справа — как было в оригинале с соцсетями. Одна
+   кнопка под линией смотрелась обрубком, вдвоём ряд снова держится. */
+.about-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  border-top: 1px solid var(--lm-line);
+  padding-top: 1.5rem;
+}
+
+/* ============================ ПОЛОСА ============================ */
+
+#band {
+  background: #fff;
+}
+/* На узком экране плитки идут по двое, как в оригинале, а не одной
+   колонкой: четыре штуки в столбик занимают пол-экрана впустую.
+
+   Отступы сверху и снизу равные, чтобы полоса стояла ровно посередине
+   между тёмной панелью с цифрами и тёмным подвалом. Раньше сверху копилось
+   152px (нижнее поле блока цифр плюс своё), а снизу оставалось 40 — полоса
+   висела прижатой к подвалу. Сумма не изменилась, поэтому высота страницы
+   осталась прежней: нижнее поле у блока цифр снято, всё расстояние держит
+   сама полоса. */
+#band ul {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  padding: 5rem 1.25rem;
+}
+@media (min-width: 640px) {
+  #band ul {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    padding-inline: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  #band ul {
+    padding-block: 6rem;
+  }
+}
+#band .tile {
+  display: grid;
+  place-items: center;
+  height: 6rem;
+  border-radius: 9999px;
+  font-size: 1.875rem;
+  font-weight: 500;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (min-width: 640px) {
+  #band .tile {
+    height: 10rem;
+    font-size: 2.25rem;
+  }
+}
+.hoverable #band .tile:hover {
+  transform: scale(1.03);
+}
+/* Кремовый #fdf8f1 на белом фоне полосы почти не читался — плитка «Мы»
+   выглядела дыркой в ряду. Взят следующий тон той же поверхности: тёмный
+   текст на нём даёт 12:1. */
+#band .t-light {
+  background: var(--lm-surface-2);
+  color: var(--lm-ink);
+}
+/* Тёмный текст, а не белый: на светлом конце градиента белый даёт
+   2.29:1, тёмный — 7.02:1 и 3.80:1 на тёмном конце. */
+#band .t-accent {
+  background: linear-gradient(to bottom right, var(--lm-accent-from), var(--lm-accent-to));
+  color: #3a1704;
+}
+#band .t-dark {
+  background: var(--lm-dark);
+  color: #fff;
+}
+/* Было блёклой «призрачной» плиткой из оригинала — там она значила
+   «лучше», полунамёком. У нас это «всегда», и оно должно звучать в полный
+   голос: берём фирменный зелёный с логотипа. Тёмный текст на нём даёт
+   от 6.9:1 на тёмном конце градиента до 8.7:1 на светлом. */
+#band .t-bright {
+  background: linear-gradient(to bottom right, #2ce39c, #11cc86);
+  color: #04310c;
+}
+#band .t-dark .ic {
+  font-size: 2.25rem;
+}
+@media (min-width: 640px) {
+  #band .t-dark .ic {
+    font-size: 3rem;
+  }
+}
+
+/* ============================ КЛИНИКИ (было «портфолио») ============================ */
+
+#clinics {
+  background: #fff;
+}
+#clinics .shell {
+  padding: 2.5rem 1.25rem 5rem;
+}
+@media (min-width: 640px) {
+  #clinics .shell {
+    padding-inline: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  #clinics .shell {
+    padding-bottom: 7rem;
+  }
+}
+#clinics .head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 3rem;
+}
+#clinics h2 {
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  width: fit-content;
+}
+@media (min-width: 640px) {
+  #clinics h2 {
+    font-size: 3rem;
+  }
+}
+#clinics .cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+@media (min-width: 768px) {
+  #clinics .cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.clinic-card {
+  position: relative;
+  min-height: 22rem;
+  overflow: hidden;
+  border-radius: 2rem;
+  background: var(--lm-dark);
+  padding: 1.5rem;
+  color: #fff;
+  outline: 1px solid rgba(255, 255, 255, 0.06);
+  outline-offset: -1px;
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (min-width: 640px) {
+  .clinic-card {
+    min-height: 26rem;
+    padding: 2rem;
+  }
+}
+.hoverable .clinic-card:hover {
+  transform: translateY(-8px) scale(1.012);
+}
+.clinic-card .shot {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* Закрытая клиника обесцвечена — знак состояния, а не украшение. */
+.clinic-card.closed .shot {
+  filter: grayscale(0.9) brightness(0.85);
+}
+/* Лёгкая вуаль по всему кадру — только чтобы фотографии трёх разных
+   клиник читались как одна серия. Под текст она не работает. */
+.clinic-card .scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(10, 85, 70, 0.45), rgba(10, 85, 70, 0.12));
+}
+.clinic-card .meta {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: #fff;
+}
+/* Наверху карточки затемнение слабое, поэтому режим работы и стрелка
+   получают собственную плотную подложку. */
+.clinic-card .meta > span:first-child {
+  background: rgba(10, 85, 70, 0.92);
+  border-radius: 9999px;
+  padding: 0.4375rem 0.875rem;
+}
+.clinic-card .badge {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: rgba(10, 85, 70, 0.85);
+  color: #fff;
+  outline: 1px solid rgba(255, 255, 255, 0.2);
+  outline-offset: -1px;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.hoverable .clinic-card:hover .badge {
+  transform: rotate(45deg) scale(1.08);
+}
+/*
+  Затемнение под текстом привязано к самому текстовому блоку, а не к высоте
+  карточки. На телефоне карточка ниже (352px против 416), и градиент по всему
+  кадру оставлял заголовок на прозрачном участке — 1.58:1 вместо 4.5.
+  Здесь подложка всегда плотнее 0.95 ровно там, где лежит текст: даже на
+  белом кадре это 7.7:1.
+*/
+.clinic-card .bot {
+  position: absolute;
+  z-index: 1;
+  inset-inline: 0;
+  bottom: 0;
+  padding: 4rem 1.5rem 1.5rem;
+  background: linear-gradient(
+    to top,
+    rgba(10, 85, 70, 0.97) 0%,
+    rgba(10, 85, 70, 0.95) 85%,
+    rgba(10, 85, 70, 0) 100%
+  );
+}
+@media (min-width: 640px) {
+  .clinic-card .bot {
+    padding: 5rem 2rem 2rem;
+  }
+}
+.clinic-card h3 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+@media (min-width: 640px) {
+  .clinic-card h3 {
+    font-size: 1.875rem;
+  }
+}
+.clinic-card p {
+  margin-top: 0.5rem;
+  max-width: 28rem;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+.clinic-card .tags {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ============================ УСЛУГИ ============================ */
+
+#services {
+  background: #fff;
+}
+#services .shell {
+  padding: 5rem 1.25rem;
+}
+@media (min-width: 640px) {
+  #services .shell {
+    padding-inline: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  #services .shell {
+    padding-block: 7rem;
+  }
+}
+#services h2 {
+  margin: 0 0 3rem;
+  max-width: 18ch;
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@media (min-width: 640px) {
+  #services h2 {
+    margin-bottom: 3.5rem;
+    font-size: 3rem;
+  }
+}
+.srow {
+  border-top: 1px solid var(--lm-line);
+}
+.srow:first-child {
+  border-top: 0;
+}
+.srow .inner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  background: rgba(253, 248, 241, 0);
+  transition:
+    background 0.45s cubic-bezier(0.2, 0.8, 0.2, 1),
+    padding 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (min-width: 640px) {
+  .srow .inner {
+    gap: 1.5rem;
+    padding-block: 2rem;
+  }
+}
+.hoverable .srow .inner:hover {
+  background: rgba(253, 248, 241, 1);
+  padding-left: 2rem;
+  padding-right: 1.25rem;
+}
+.srow .idx {
+  width: 1.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--lm-accent-ink);
+}
+@media (min-width: 640px) {
+  .srow .idx {
+    width: 2.5rem;
+  }
+}
+.srow h3 {
+  flex: 1;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+@media (min-width: 640px) {
+  .srow h3 {
+    font-size: 1.875rem;
+  }
+}
+@media (min-width: 768px) {
+  .srow h3 {
+    font-size: 2.25rem;
+  }
+}
+.srow .desc {
+  display: none;
+  max-width: 20rem;
+  font-size: 0.875rem;
+  color: rgba(43, 42, 41, 0.7);
+}
+@media (min-width: 1024px) {
+  .srow .desc {
+    display: block;
+  }
+}
+.srow .go {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--lm-dark);
+  color: #fff;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (min-width: 640px) {
+  .srow .go {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+.hoverable .srow .inner:hover .go {
+  transform: translateX(5px);
+}
+
+/* ============================ ЦИФРЫ ============================ */
+
+#stats {
+  background: #fff;
+}
+/* Нижнего поля нет: сразу за блоком идёт полоса-слоган, и всё расстояние
+   до неё держит она сама — иначе полоса не встаёт посередине между этой
+   тёмной панелью и тёмным подвалом. */
+#stats .shell {
+  padding: 0 1.25rem;
+}
+@media (min-width: 640px) {
+  #stats .shell {
+    padding-inline: 2rem;
+  }
+}
+.stats-panel {
+  border-radius: 2rem;
+  background: var(--lm-dark);
+  padding: 3rem 1.5rem;
+  color: #fff;
+}
+@media (min-width: 640px) {
+  .stats-panel {
+    padding: 4rem 2rem;
+  }
+}
+@media (min-width: 768px) {
+  .stats-panel {
+    padding-inline: 4rem;
+  }
+}
+.stats-panel h2 {
+  max-width: 22ch;
+  font-size: 1.875rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+@media (min-width: 768px) {
+  .stats-panel h2 {
+    font-size: 2.25rem;
+  }
+}
+.stats-grid {
+  margin-top: 3.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 2rem;
+  row-gap: 3rem;
+}
+@media (min-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+.stat .val {
+  font-size: 3rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@media (min-width: 640px) {
+  .stat .val {
+    font-size: 3.75rem;
+  }
+}
+@media (min-width: 768px) {
+  .stat .val {
+    font-size: 4.5rem;
+  }
+}
+.stat .lbl {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ============================ ПОДВАЛ ============================ */
+
+#site-footer {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2rem 2rem 0 0;
+  background: var(--lm-dark);
+  color: #fff;
+}
+#site-footer .shell {
+  position: relative;
+  z-index: 10;
+  padding: 5rem 1.25rem 2.5rem;
+}
+@media (min-width: 640px) {
+  #site-footer .shell {
+    padding-inline: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  #site-footer .shell {
+    padding-top: 6rem;
+  }
+}
+.f-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 4rem;
+}
+@media (min-width: 1024px) {
+  .f-cta {
+    flex-direction: row;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+}
+.f-cta h2 {
+  max-width: 16ch;
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+@media (min-width: 640px) {
+  .f-cta h2 {
+    font-size: 3rem;
+  }
+}
+@media (min-width: 768px) {
+  .f-cta h2 {
+    font-size: 3.75rem;
+  }
+}
+.f-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  padding-block: 4rem;
+}
+@media (min-width: 1024px) {
+  .f-cols {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3rem;
+  }
+}
+.f-brand {
+  grid-column: 1 / -1;
+}
+@media (min-width: 1024px) {
+  .f-brand {
+    grid-column: auto;
+  }
+}
+.f-brand img {
+  height: 2.25rem;
+  width: auto;
+}
+.f-brand p {
+  margin-top: 1rem;
+  max-width: 22rem;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+.f-brand .phones {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.f-brand .phones a {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: opacity 0.25s ease;
+}
+.hoverable .f-brand .phones a:hover {
+  opacity: 0.75;
+}
+.f-col h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: rgba(255, 255, 255, 0.7);
+}
+.f-col ul {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+.f-col li a {
+  padding-block: 0.375rem;
+}
+.f-legal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding-top: 2rem;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+@media (min-width: 640px) {
+  .f-legal {
+    flex-direction: row;
+  }
+}
+.f-legal .links {
+  display: flex;
+  gap: 1.5rem;
+}
+#footer-mark {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1.5rem;
+  z-index: 0;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+  font-weight: 700;
+  line-height: 1;
+  font-size: var(--lm-watermark);
+  color: rgba(255, 255, 255, 0.06);
+}
+
+/* ============================ МЕНЮ ============================ */
+
+#navmenu {
+  position: fixed;
+  inset: 0;
+  z-index: 115;
+  display: flex;
+  flex-direction: column;
+  background: var(--lm-dark);
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#navmenu.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+#navmenu .top {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 1.25rem;
+}
+#navmenu .top .brand {
+  justify-self: center;
+}
+#navmenu .top .close {
+  justify-self: end;
+}
+@media (min-width: 640px) {
+  #navmenu .top {
+    padding: 1.5rem 2rem;
+  }
+}
+#navmenu .brand img {
+  height: 2.25rem;
+  width: auto;
+}
+#navmenu .close {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 0.875rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.8);
+  transition:
+    border-color 0.25s,
+    color 0.25s;
+}
+.hoverable #navmenu .close:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
+}
+#navmenu .close .word {
+  display: none;
+}
+@media (min-width: 640px) {
+  #navmenu .close .word {
+    display: inline;
+  }
+}
+#navmenu .mid {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* Те же поля, что у шапки и низа меню, иначе пункты уезжают на 32px
+     левее логотипа. */
+  padding-inline: 1.25rem;
+}
+@media (min-width: 640px) {
+  #navmenu .mid {
+    padding-inline: 2rem;
+  }
+}
+#navmenu ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+#navmenu .item {
+  display: flex;
+  gap: 1rem;
+  padding-block: 0.5rem;
+  text-align: left;
+  width: 100%;
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  transform: translateY(1rem);
+  opacity: 0;
+  transition:
+    transform 0.5s ease-out,
+    opacity 0.5s ease-out;
+}
+@media (min-width: 640px) {
+  #navmenu .item {
+    font-size: 3.75rem;
+  }
+}
+#navmenu.open .item {
+  transform: none;
+  opacity: 1;
+}
+#navmenu .item .n {
+  font-size: 1rem;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+  transition: color 0.3s;
+}
+#navmenu .item .l {
+  color: rgba(255, 255, 255, 0.8);
+  transition: color 0.3s;
+}
+.hoverable #navmenu .item:hover .n {
+  color: var(--lm-accent);
+}
+.hoverable #navmenu .item:hover .l {
+  color: #fff;
+}
+#navmenu .bot {
+  display: flex;
+  justify-content: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 1.5rem 1.25rem 2rem;
+}
+@media (min-width: 640px) {
+  #navmenu .bot {
+    padding-inline: 2rem;
+  }
+}
+
+/* Крупный вариант «таблетки» — для главной кнопки в меню. */
+.pill.big > span {
+  min-height: 4rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+.pill.big.witharrow > span {
+  padding: 0.5rem 0.5rem 0.5rem 2rem;
+}
+.pill.big .badge {
+  width: 3rem;
+  height: 3rem;
+}
+.pill.light .badge {
+  background: var(--lm-dark);
+  color: #fff;
+}
+
+/* ============================ МОДАЛКА ============================ */
+
+#modal {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(10, 85, 70, 0.35);
+  backdrop-filter: blur(16px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (min-width: 640px) {
+  #modal {
+    align-items: center;
+  }
+}
+#modal.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+#modal .panel {
+  position: relative;
+  width: 100%;
+  max-width: 32rem;
+  overflow: hidden;
+  border-radius: 2rem;
+  background: #fff;
+  padding: 1.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  outline: 1px solid var(--lm-line);
+  outline-offset: -1px;
+  color: var(--lm-ink);
+  transform: translateY(28px);
+  opacity: 0;
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (min-width: 640px) {
+  #modal .panel {
+    padding: 2rem;
+  }
+}
+#modal.open .panel {
+  transform: none;
+  opacity: 1;
+}
+/*
+  Крестик прилетает с поворотом вслед за панелью и доворачивается на 90°
+  при наведении. Поворот на самой кнопке, а не на иконке: так вместе с
+  крестом едет и круглая подложка, движение читается одним жестом.
+*/
+#modal .x {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--lm-surface);
+  color: rgba(43, 42, 41, 0.75);
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.7);
+  transition:
+    background 0.25s,
+    color 0.25s,
+    opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+#modal.open .x {
+  opacity: 1;
+  transform: none;
+  transition-delay: 0.18s;
+}
+.hoverable #modal .x:hover {
+  background: var(--lm-surface-2);
+  color: var(--lm-ink);
+}
+.hoverable #modal.open .x:hover {
+  transform: rotate(90deg);
+  transition-delay: 0s;
+}
+#modal.open .x:active {
+  transform: rotate(90deg) scale(0.88);
+  transition-delay: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  #modal .x {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+#modal .kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(43, 42, 41, 0.75);
+}
+#modal .kicker::before {
+  content: '';
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background: var(--lm-accent);
+}
+#modal h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 0.375rem;
+}
+@media (min-width: 640px) {
+  #modal h2 {
+    font-size: 1.875rem;
+  }
+}
+#modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+#modal label {
+  display: block;
+}
+#modal .cap {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  color: rgba(43, 42, 41, 0.7);
+}
+#modal input,
+#modal textarea,
+#modal select {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--lm-line);
+  background: rgba(253, 248, 241, 0.6);
+  border-radius: 0.875rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: inherit;
+  outline: none;
+  transition:
+    border-color 0.25s,
+    background 0.25s;
+}
+#modal textarea {
+  resize: none;
+}
+#modal input:focus,
+#modal textarea:focus,
+#modal select:focus {
+  border-color: var(--lm-dark);
+  background: #fff;
+}
+/* Подпись «перезвоним в течение 15 минут» убрана — обещание, за которое
+   никто не отвечает. В ряду осталась одна кнопка, поэтому она прижата
+   вправо, а не растянута через всю ширину. */
+#modal .frow {
+  margin-top: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* ---- обязательные поля ---- */
+
+/* #a3261c на белом — 7.4:1, читается и не спорит с зелёным сайта. */
+#modal .err {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.75rem;
+  color: #a3261c;
+}
+#modal input.bad,
+#modal textarea.bad,
+#modal .sel.bad .sel-btn {
+  border-color: #a3261c;
+}
+#modal .cap em {
+  font-style: normal;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgba(43, 42, 41, 0.5);
+}
+/* Обёртка списка клиник: у неё нет <label>, потому что подпись не должна
+   вести фокус на кнопку — иначе клик по подписи открывал бы список. */
+#modal .fld {
+  display: block;
+}
+
+/* ---- свой выпадающий список ---- */
+
+.sel {
+  position: relative;
+}
+.sel-btn {
+  width: 100%;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--lm-line);
+  background: rgba(253, 248, 241, 0.6);
+  border-radius: 0.875rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: inherit;
+  text-align: left;
+  transition:
+    border-color 0.25s,
+    background 0.25s;
+}
+.sel.open .sel-btn,
+.sel-btn:focus-visible {
+  border-color: var(--lm-dark);
+  background: #fff;
+}
+.sel-btn .ph {
+  color: rgba(43, 42, 41, 0.55);
+}
+.sel-arrow {
+  font-size: 1.25rem;
+  color: rgba(43, 42, 41, 0.55);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sel.open .sel-arrow {
+  transform: rotate(180deg);
+}
+.sel-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 5;
+  margin: 0;
+  padding: 0.375rem;
+  list-style: none;
+  border: 1px solid var(--lm-line);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 18px 40px -12px rgba(10, 85, 70, 0.28);
+  opacity: 0;
+  transform: translateY(-0.5rem) scale(0.98);
+  transform-origin: top center;
+  pointer-events: none;
+  transition:
+    opacity 0.25s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.sel.open .sel-list {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.sel-list li button {
+  width: 100%;
+  display: block;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.75rem;
+  text-align: left;
+  transition: background 0.2s;
+}
+.hoverable .sel-list li button:hover,
+.sel-list li[aria-selected='true'] button {
+  background: var(--lm-surface);
+}
+.sel-list .m {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+.sel-list .a {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.75rem;
+  color: rgba(43, 42, 41, 0.7);
+}
+@media (prefers-reduced-motion: reduce) {
+  .sel-list,
+  .sel-arrow {
+    transition: none;
+  }
+}
+#modal .success {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  padding-block: 2rem;
+}
+#modal.done .success {
+  display: flex;
+}
+#modal.done .formwrap {
+  display: none;
+}
+#modal .sbadge {
+  width: 3.5rem;
+  height: 3.5rem;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--lm-dark);
+  color: var(--lm-accent);
+  font-size: 1.5rem;
+}
+#modal .success p {
+  max-width: 34ch;
+  font-size: 0.875rem;
+  color: rgba(43, 42, 41, 0.75);
+}
+
+/* ============================ КОГО ЛЕЧИМ ============================ */
+
+/* Кремовый фон отделяет блок от белых соседей — адресов сверху и полосы
+   снизу. */
+#pets {
+  background: var(--lm-surface);
+}
+#pets .shell {
+  padding: 4rem 1.25rem;
+}
+@media (min-width: 640px) {
+  #pets .shell {
+    padding-inline: 2rem;
+  }
+}
+@media (min-width: 1024px) {
+  #pets .shell {
+    padding-block: 6rem;
+  }
+}
+#pets .head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 3rem;
+}
+#pets h2 {
+  font-size: 2.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  width: fit-content;
+  text-align: center;
+}
+@media (min-width: 640px) {
+  #pets h2 {
+    font-size: 3rem;
+  }
+}
+/* Пять в один ряд на любой ширине. Размеры текучие, иначе на телефоне
+   плитки не поместятся. */
+.pet-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+  /* Место сверху под то, что вылезает за кромку плиток. */
+  padding-top: 3.5rem;
+}
+.pet-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.875rem;
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--lm-line);
+  border-radius: 1.5rem;
+  background: #fff;
+  padding: 1.75rem 1rem;
+  text-align: center;
+  transition:
+    transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 0.4s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 0.4s ease;
+}
+/*
+  Квадрат держит высоту в потоке, вырезка внутри него — абсолютная, прижата
+  к низу и выше квадрата. Отсюда и эффект: животное выходит за кромку.
+*/
+.pet-tile .slot {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 1.25rem;
+  background: var(--lm-surface);
+  transition: background 0.4s ease;
+}
+.pet-tile .slot.ph {
+  display: grid;
+  place-items: center;
+  font-size: 2.75rem;
+  color: var(--lm-dark);
+  transition:
+    background 0.4s ease,
+    color 0.4s ease;
+}
+.pet-tile .shot {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: none;
+  /* высота приходит из PETS, у каждого животного своя */
+}
+.pet-tile .nm {
+  font-size: 1.375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--lm-ink);
+  transition: color 0.4s ease;
+}
+
+/* Заливка на наведении. Белый на #0a5546 даёт 8.75:1, белый 80% — 6.2:1. */
+.hoverable .pet-tile:hover {
+  transform: translateY(-6px);
+  background: var(--lm-dark);
+  border-color: var(--lm-dark);
+}
+.hoverable .pet-tile:hover .slot {
+  background: rgba(255, 255, 255, 0.16);
+}
+.hoverable .pet-tile:hover .slot.ph {
+  color: #fff;
+}
+.hoverable .pet-tile:hover .nm {
+  color: #fff;
+}
+
+
+
+/*
+  Пять в горизонтальный ряд помещаются только на широком экране: на 375px
+  плитка вышла бы 62px, а фотография внутри — 46px. Поэтому ниже 1024px
+  ряд разворачивается вертикально, одна плитка под другой, а сама плитка
+  становится горизонтальной: квадрат слева, название справа. Вылет за
+  верхнюю кромку при этом сохраняется.
+*/
+@media (max-width: 1023px) {
+  .pet-grid {
+    /* Одна колонка, но плитка остаётся такой же, как на широком экране:
+       квадрат сверху, подпись снизу. Ширину фиксируем, иначе на всю ширину
+       экрана квадрат раздуется вдвое против десктопного. */
+    grid-template-columns: 1fr;
+    justify-items: center;
+    /* Просвет считается от вылета: чем крупнее квадрат, тем выше поднимается
+       вырезка. При квадрате 303px собака встаёт на 63px над плиткой, попугай
+       на 69 — при меньшем зазоре их головы заезжали бы на карточку выше. */
+    gap: 5.5rem;
+    padding-top: 5rem;
+  }
+  .pet-grid > li {
+    width: 100%;
+    /* На телефоне плитка занимает всю доступную ширину, на планшете
+       упирается в 21rem — иначе на 768px квадрат раздулся бы до 670px. */
+    max-width: min(100%, 21rem);
+  }
+}
+
+/* ==================== ПЛИТКИ ПЕРВОГО ЭКРАНА (телефон) ==================== */
+
+/*
+  Три услуги вместо серого предложения под заголовком. Тон плитки взят с
+  плашки нижней ленты, так что первый экран держится на одном цвете:
+  светлый намёк на него сверху — сама плашка внизу.
+
+  Контраст #0a5546 на подложке (rgba(207,238,224,.55) поверх кремового) —
+  5.6:1. Плитки не кликабельны, поэтому минимум 24px по WCAG 2.5.8 к ним
+  не относится.
+*/
+.hero-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.375rem;
+  margin: 0.875rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.hero-chips li {
+  padding: 0.3rem 0.625rem;
+  border: 1px solid rgba(10, 85, 70, 0.22);
+  border-radius: 999px;
+  background: rgba(207, 238, 224, 0.55);
+  color: #0a5546;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+/* ==================== ФОНОВЫЕ ЗНАКИ ==================== */
+
+/*
+  Лапы и предметы из кабинета врача, разложенные по секциям. Секция с ними
+  получает has-deco: overflow:clip обрезает вылет знака за край и не даёт
+  появиться горизонтальной прокрутке — clip, а не hidden, чтобы секция не
+  стала контейнером прокрутки. Содержимое поднято на z-index 1: без этого
+  абсолютно спозиционированный знак лёг бы поверх текста, как бы поздно он
+  ни стоял в разметке.
+
+  Цвет — те же 5.5% чернил, что у лапы в блоке «О клинике». На белом это
+  #f2f2f2: знак виден, а текст на нём держит 12.2:1 против 13.5 на чистом
+  белом, то есть запас до нормы AA огромный.
+*/
+.has-deco {
+  position: relative;
+  overflow: clip;
+}
+.has-deco > .shell {
+  position: relative;
+  z-index: 1;
+}
+/*
+  Прозрачность задаётся элементу целиком, а не цвету обводки. Иконка
+  собрана из нескольких отдельных путей, и при полупрозрачном цвете каждый
+  из них ложился на фон сам по себе: там, где дужки фонендоскопа заходят
+  друг на друга, две обводки по 5.5% складывались в 10.7% — и на сгибах
+  проступали тёмные пятна, будто знак склеен из кусков.
+
+  При opacity на элементе браузер сперва рисует весь знак непрозрачным во
+  временный буфер — наложения там гасят друг друга, — и уже готовую
+  картинку кладёт на фон с нужной прозрачностью. Заливка выходит ровной.
+*/
+.deco {
+  position: absolute;
+  font-size: var(--deco-size);
+  color: #2b2a29;
+  opacity: 0.055;
+  pointer-events: none;
+}
+/* На узком экране секции плотные: половина знаков убирается совсем, а
+   оставшиеся ужимаются вдвое и бледнеют — на 375px знак в 14rem накрывает
+   заголовок целиком и читается как грязь, а не как подложка. */
+@media (max-width: 1023px) {
+  .deco-lg {
+    display: none;
+  }
+  .deco {
+    font-size: calc(var(--deco-size) * 0.55);
+    opacity: 0.045;
+  }
+}
+
+/* ==================== «ПОЧЕМУ НАМ ДОВЕРЯЮТ» ==================== */
+
+/*
+  Раскрытие сделано на grid-template-rows: 0fr → 1fr. Это единственный
+  способ довести высоту до auto плавно: max-height наугад либо обрезает
+  текст, либо даёт рывок в конце, а замер высоты в коде ломается, когда
+  строки переносятся иначе на другой ширине.
+*/
+.why {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.35s ease;
+}
+.why.open {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+/* min-height:0 обязателен: без него содержимое grid-элемента не даёт
+   строке сжаться до нуля и панель не закрывается. */
+.why-inner {
+  overflow: hidden;
+  min-height: 0;
+}
+.why ul {
+  display: grid;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 2rem 0 0.5rem;
+  list-style: none;
+}
+/* Пункты подтягиваются по очереди — при закрытии задержка снимается,
+   иначе панель схлопывалась бы, пока текст ещё едет. */
+.why li {
+  transform: translateY(10px);
+  opacity: 0;
+  transition:
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.4s ease;
+}
+.why.open li {
+  transform: none;
+  opacity: 1;
+  transition-delay: calc(0.12s + var(--i) * 0.07s);
+}
+.why h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.why p {
+  margin-top: 0.375rem;
+  max-width: 54ch;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: rgba(43, 42, 41, 0.75);
+}
+/* Стрелка кнопки разворачивается вниз, когда текст открыт. Специфичность
+   выше, чем у .hoverable .pill.ar-right:hover, иначе наведение вернуло бы
+   её обратно вбок. */
+.why-btn.on .badge .ic,
+.hoverable .why-btn.on:hover .badge .ic {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .why,
+  .why li {
+    transition: none;
+  }
+}

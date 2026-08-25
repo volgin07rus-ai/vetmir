@@ -1,0 +1,7 @@
+node_modules
+dist
+*.tsbuildinfo
+*.bak
+.DS_Store
+.vite
+src/_keep_copy.txt
